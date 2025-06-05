@@ -14,15 +14,27 @@ Traditional Alpine-based containers include busybox, which provides many shell u
 
 ### Build and Run
 
+The Dockerfile includes two build targets:
+
+**Minimal secure image (default):**
 ```bash
-# Build the Docker image
+# Build with reduced attack surface (no busybox)
 docker build -t minimal-java .
 
 # Run the container
 docker run minimal-java
 ```
 
-The application will output: `Hello World from Java 21!`
+**Standard Alpine image:**
+```bash
+# Build standard Alpine with busybox utilities
+docker build --target prod-alpine -t minimal-java-standard .
+
+# Run the container
+docker run minimal-java-standard
+```
+
+Both images output: `Hello World from Java 21!`
 
 ### Local Development
 
@@ -46,17 +58,14 @@ nix flake update
 docker run --rm -v $(pwd):/workspace -w /workspace nixos/nix:latest nix --extra-experimental-features 'nix-command flakes' flake update
 ```
 
-## Reverting to Busybox
+## Build Targets Explained
 
-To revert back to using the standard busybox setup, remove all sections marked with:
+The Dockerfile uses multi-stage builds with two final production targets:
 
-```dockerfile
-## --- MINIMAL IMAGE SETUP STEP START ---
-...
-## --- MINIMAL IMAGE SETUP STEP END ---
-```
+- **`prod-minimal` (default)**: Removes busybox and uses Nix-built static binaries for minimal attack surface
+- **`prod-alpine`**: Standard Alpine Linux with busybox utilities for broader compatibility
 
-This will restore the standard Alpine busybox behavior while maintaining the non-root user security.
+Use `--target prod-alpine` to build without the security hardening if you need standard shell utilities.
 
 ## Security Benefits
 
