@@ -55,15 +55,23 @@ WORKDIR /app
 # Copy the built jar from builder stage
 COPY --from=builder /app/target/*.jar app.jar
 
+# Copy entrypoint script
+COPY entrypoint.sh /entrypoint.sh
+RUN chmod +x /entrypoint.sh
+
 EXPOSE 8080
+
+# inside entrypoint.sh we can run our startup stuff as root
+ENTRYPOINT ["/entrypoint.sh"]
 
 # su equivalent of su-exec command below
 CMD ["su", "-", "appuser", "-c", "java -jar app.jar"]
 
 ## --- MINIMAL IMAGE SETUP STEP START ---
 
+# sanity check that our static binaries work
 RUN sh -c "true" && chmod --version && su-exec appuser:appgroup /bin/sh -c "true"
 
-CMD ["su-exec", "appuser","/bin/sh","-c", "java -jar app.jar"]
+CMD ["su-exec", "appuser", "/bin/sh", "-c", "java -jar app.jar"]
 
 ## --- MINIMAL IMAGE SETUP STEP END ---
