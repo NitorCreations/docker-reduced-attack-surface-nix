@@ -28,7 +28,7 @@
             installPhase = ''
               mkdir -p $out/bin
               cp ${pkgs.pkgsStatic.dash}/bin/dash $out/bin/sh
-              cp ${pkgs.pkgsStatic.su}/bin/su $out/bin/
+              cp ${pkgs.pkgsStatic.su-exec}/bin/su-exec $out/bin/
               cp ${pkgs.pkgsStatic.coreutils}/bin/chmod $out/bin/
             '';
           };
