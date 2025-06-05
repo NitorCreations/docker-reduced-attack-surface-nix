@@ -35,20 +35,11 @@ COPY src/ src/
 # Build the application
 RUN mvn clean package -DskipTests
 
-FROM eclipse-temurin:21-jre-alpine AS prod
-
+FROM eclipse-temurin:21-jre-alpine AS prod-alpine
 
 # Create non-root user
 RUN addgroup -g 1001 -S appgroup && \
     adduser -u 1001 -S appuser -G appgroup
-
-## --- MINIMAL IMAGE SETUP STEP START ---
-
-# remove busybox and all its symlinks to reduce attack surface
-RUN find /bin /sbin /usr/bin /usr/sbin -type l -exec sh -c 'readlink "$1" | grep -q busybox' _ {} \; -delete && rm -f /bin/busybox
-COPY --from=minimal-pkgs /bin/ /bin/
-
-## --- MINIMAL IMAGE SETUP STEP END ---
 
 WORKDIR /app
 
@@ -63,13 +54,17 @@ EXPOSE 8080
 
 # inside entrypoint.sh we can run our startup stuff as root
 ENTRYPOINT ["/entrypoint.sh"]
-
-# su equivalent of su-exec command below
-CMD ["su", "-", "appuser", "-c", "java -jar app.jar"]
+# su equivalent of su-exec command used in prod-minimal
+CMD ["su", "-s", "/bin/sh", "appuser", "-c", "java -jar app.jar"]
 
 ## --- MINIMAL IMAGE SETUP STEP START ---
+FROM prod-alpine AS prod-minimal
 
-# sanity check that our static binaries work
+# remove busybox and all its symlinks to reduce attack surface
+RUN find /bin /sbin /usr/bin /usr/sbin -type l -exec sh -c 'readlink "$1" | grep -q busybox' _ {} \; -delete && rm -f /bin/busybox
+COPY --from=minimal-pkgs /bin/ /bin/
+
+# sanity check that our statically built binaries work
 RUN sh -c "true" && chmod --version && su-exec appuser:appgroup /bin/sh -c "true"
 
 CMD ["su-exec", "appuser", "/bin/sh", "-c", "java -jar app.jar"]
